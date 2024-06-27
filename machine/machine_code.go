@@ -65,42 +65,52 @@ func GetCpuSerialNumber() (data string, err error) {
 	return osMachine.GetCpuSerialNumber()
 }
 
-func GetMACAddress() (string, error) {
+func GetMACAddress() ([]string, error) {
 	netInterfaces, err := net.Interfaces()
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	var mac string
-	var bakMac1 string
-	var bakMac2 string
+	var wlanmac string
+	var macs []string
+	var runmacs []string
 
 	for i := 0; i < len(netInterfaces); i++ {
 		flags := netInterfaces[i].Flags.String()
+		//fmt.Printf("全部属性:%+v\n", netInterfaces[i])
+		//fmt.Println("Flags:", flags, " Name:", netInterfaces[i].Name, " Mac:", netInterfaces[i].HardwareAddr.String())
 
-		if strings.Contains(flags, "up") &&
-			strings.Contains(flags, "broadcast") &&
-			strings.Contains(flags, "running") &&
+		if strings.Contains(flags, "broadcast") &&
 			!strings.Contains(flags, "loopback") {
 
-			//fmt.Println(fmt.Sprintf("i:%d name:%s %v", i, netInterfaces[i].Name, flags))
-			if strings.Contains(netInterfaces[i].Name, "WLAN") {
-				mac = netInterfaces[i].HardwareAddr.String()
-				return mac, nil
-			}
-			if !strings.Contains(netInterfaces[i].Name, "VMware") {
-				bakMac1 = netInterfaces[i].HardwareAddr.String()
-			} else {
-				bakMac2 = netInterfaces[i].HardwareAddr.String()
+			name := netInterfaces[i].Name
+			if strings.Contains(name, "WLAN") {
+				if netInterfaces[i].HardwareAddr.String() != "" {
+					wlanmac = netInterfaces[i].HardwareAddr.String()
+				}
+			} else if !strings.Contains(name, "VMware") && //排除VM虚拟机网络
+				!strings.Contains(name, "(WSL)") && //排除WSL虚拟机网络
+				!strings.Contains(name, "蓝牙") && //排除蓝牙网络
+				!strings.Contains(strings.ToUpper(name), "BLUETOOTH") {
+				if netInterfaces[i].HardwareAddr.String() != "" {
+					if strings.Contains(flags, "running") {
+						runmacs = append(runmacs, netInterfaces[i].HardwareAddr.String())
+					} else {
+						macs = append(macs, netInterfaces[i].HardwareAddr.String())
+					}
+				}
 			}
 		}
 	}
-	if mac == "" {
-		if bakMac1 != "" {
-			return bakMac1, nil
-		}
-		return bakMac2, nil
+	if wlanmac != "" {
+		arr := []string{wlanmac}
+		runmacs = append(arr, runmacs...)
 	}
-	return mac, errors.New("unable to get the correct MAC address")
+	macs = append(runmacs, macs...)
+	if len(macs) == 0 {
+		return nil, errors.New("unable to get the correct MAC address")
+	}
+
+	return macs, errors.New("unable to get the correct MAC address")
 }
 
 func GetLocalIpAddr() (string, error) {
