@@ -1,3 +1,3 @@
-module github.com/super-l/machine-code
+module github.com/bdgca-wjp/machine-code
 
-go 1.14
+go 1.22

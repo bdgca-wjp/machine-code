@@ -7,10 +7,11 @@ package os
 import (
 	"bytes"
 	"errors"
-	"github.com/super-l/machine-code/machine/types"
 	"os"
 	"os/exec"
 	"strings"
+
+	"github.com/bdgca-wjp/machine-code/machine/types"
 )
 
 type LinuxMachine struct{}
